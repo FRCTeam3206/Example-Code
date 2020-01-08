@@ -8,14 +8,18 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.util.Color;
-
 import com.revrobotics.ColorSensorV3;
 import com.revrobotics.ColorMatchResult;
+import com.ctre.phoenix.motorcontrol.*;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.revrobotics.ColorMatch;
+import edu.wpi.first.wpilibj.Joystick;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -57,6 +61,17 @@ public class Robot extends TimedRobot {
   private final Color kRedTarget = ColorMatch.makeColor(0.561, 0.232, 0.114);
   private final Color kYellowTarget = ColorMatch.makeColor(0.361, 0.524, 0.113);
 
+  Joystick arcadeStick = new Joystick(0);
+  TalonSRX WheelSpinner = new TalonSRX(0);
+  double magScale = 1;//scaling factor to convert the raw encoder value to distance traveled
+  double currentPos = 0;
+  double startPos = 0;
+  double targetPos = 0;
+
+  String gameData = " ";
+  Timer gameDataTimer = new Timer();
+  double gameDataTimeOut = 3;
+
   @Override
   public void robotInit() {
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
@@ -67,6 +82,11 @@ public class Robot extends TimedRobot {
     m_colorMatcher.addColorMatch(kGreenTarget);
     m_colorMatcher.addColorMatch(kRedTarget);
     m_colorMatcher.addColorMatch(kYellowTarget);    
+    WheelSpinner.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 10);
+
+    gameDataTimer.reset();
+    	gameDataTimer.start();
+    	
   }
 
   /**
@@ -77,8 +97,121 @@ public class Robot extends TimedRobot {
    * <p>This runs after the mode specific periodic functions, but before
    * LiveWindow and SmartDashboard integrated updating.
    */
+
+   //----------------------------------------------uncomment this code below if you can in fact reset the encoder
+/**
+ * public void Spin (double position, double speed) {
+    WheelSpinner.setSelectedSensorPosition(0);//possible way to reset the encoder
+    currentPos = WheelSpinner.getSelectedSensorPosition();
+    targetPos = position;
+    while (currentPos < targetPos) {
+      WheelSpinner.set(ControlMode.Current, speed);
+      currentPos = WheelSpinner.getSelectedSensorPosition();
+    }
+    WheelSpinner.set(ControlMode.Current, 0);
+  }
+ */
+  public void Spin (double position, double speed) {
+    WheelSpinner.setSelectedSensorPosition(0);//possible way to reset the encoder
+    startPos = WheelSpinner.getSelectedSensorPosition();
+    currentPos = WheelSpinner.getSelectedSensorPosition();
+    targetPos = startPos + position;
+    while (currentPos < targetPos) {
+      WheelSpinner.set(ControlMode.Current, speed);
+      currentPos = WheelSpinner.getSelectedSensorPosition() - startPos;
+    }
+    WheelSpinner.set(ControlMode.Current, 0);
+  }
+
+  public void stop() {
+    WheelSpinner.set(ControlMode.Current, 0);
+  }
+
+  public void Position() {
+    Color detectedColor = m_colorSensor.getColor();
+    /**
+     * Run the color match algorithm on our detected color
+     */
+    String colorString;
+    ColorMatchResult match = m_colorMatcher.matchClosestColor(detectedColor);
+
+    if (match.color == kBlueTarget) {
+      colorString = "Blue";
+    } else if (match.color == kRedTarget) {
+      colorString = "Red";
+    } else if (match.color == kGreenTarget) {
+      colorString = "Green";
+    } else if (match.color == kYellowTarget) {
+      colorString = "Yellow";
+    } else {
+      colorString = "Unknown";
+    }
+
+        if(gameData == null) {
+          stop();
+      } else if(gameData.charAt(0) == 'G' && colorString == "Red") {
+        Spin(1, .5);
+      } else if(gameData.charAt(0) == 'B' && colorString == "Red") {
+        Spin(1, .5);
+      } else if(gameData.charAt(0) == 'Y' && colorString == "Red") {
+        Spin(1, .5);
+      } else if(gameData.charAt(0) == 'R' && colorString == "Blue") {
+        Spin(1, .5);
+      } else if(gameData.charAt(0) == 'G' && colorString == "Blue") {
+        Spin(1, .5);
+      } else if(gameData.charAt(0) == 'Y' && colorString == "Blue") {
+        Spin(1, .5);
+      } else if(gameData.charAt(0) == 'R' && colorString == "Green") {
+        Spin(1, .5);
+      } else if(gameData.charAt(0) == 'B' && colorString == "Green") {
+        Spin(1, .5);
+      } else if(gameData.charAt(0) == 'Y' && colorString == "Green") {
+        Spin(1, .5);
+      } else if(gameData.charAt(0) == 'R' && colorString == "Yellow") {
+        Spin(1, .5);
+      } else if(gameData.charAt(0) == 'G' && colorString == "Yellow") {
+        Spin(1, .5);
+      } else if(gameData.charAt(0) == 'B' && colorString == "Yellow") {
+        Spin(1, .5);
+      } else {
+        stop();
+      }
+  }
+
+
   @Override
   public void robotPeriodic() {
+    
+      while(true) {
+    		if (Double.compare(gameDataTimer.get(), gameDataTimeOut) <= 0 && gameData == null) {
+    			Timer.delay(0.02);
+    		} else {
+    			break;
+    		}
+    		gameData = DriverStation.getInstance().getGameSpecificMessage();
+    		SmartDashboard.putString("Game Data", gameData);
+    		gameData = ("NULL".equalsIgnoreCase(gameData)) ? null : gameData;
+      }
+      
+    WheelSpinner.set(ControlMode.Current, arcadeStick.getY());
+    /**
+     * reset encoder or get the current encoder value
+     * run the motor until the encoder count = desired distance
+     * while currentpos < targetpos
+     * run the motor
+     */
+    if (arcadeStick.getRawButton(1)) {
+     Spin(10, .2);
+    } else {
+      stop();
+    }
+    if (arcadeStick.getRawButton(2)) {
+      WheelSpinner.setSelectedSensorPosition(0);
+    }
+    if (arcadeStick.getRawButton(3)) {
+    
+    }
+
     Color detectedColor = m_colorSensor.getColor();
     /**
      * Run the color match algorithm on our detected color
@@ -106,6 +239,10 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Blue", detectedColor.blue);
     SmartDashboard.putNumber("Confidence", match.confidence);
     SmartDashboard.putString("Detected Color", colorString);
+    SmartDashboard.putNumber("Encoder Value", WheelSpinner.getSelectedSensorPosition());
+    SmartDashboard.putNumber("Encoder Value", WheelSpinner.getSelectedSensorPosition() * magScale);//scaled to distance traveled
+    SmartDashboard.putString("FMS Color", gameData);
+
   }
   
 
