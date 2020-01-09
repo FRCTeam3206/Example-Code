@@ -62,7 +62,7 @@ public class Robot extends TimedRobot {
   private final Color kYellowTarget = ColorMatch.makeColor(0.361, 0.524, 0.113);
 
   Joystick arcadeStick = new Joystick(0);
-  TalonSRX WheelSpinner = new TalonSRX(0);
+  TalonSRX WheelSpinner = new TalonSRX(5);
   double magScale = 1;//scaling factor to convert the raw encoder value to distance traveled
   double currentPos = 0;
   double startPos = 0;
@@ -86,8 +86,9 @@ public class Robot extends TimedRobot {
 
     gameDataTimer.reset();
     	gameDataTimer.start();
-    	
-  }
+      
+
+    }
 
   /**
    * This function is called every robot packet, no matter the mode. Use
@@ -181,7 +182,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void robotPeriodic() {
-    
+    /*
       while(true) {
     		if (Double.compare(gameDataTimer.get(), gameDataTimeOut) <= 0 && gameData == null) {
     			Timer.delay(0.02);
@@ -192,14 +193,17 @@ public class Robot extends TimedRobot {
     		SmartDashboard.putString("Game Data", gameData);
     		gameData = ("NULL".equalsIgnoreCase(gameData)) ? null : gameData;
       }
-      
-    WheelSpinner.set(ControlMode.Current, arcadeStick.getY());
+      */  
+    WheelSpinner.set(ControlMode.PercentOutput, arcadeStick.getY());
     /**
      * reset encoder or get the current encoder value
      * run the motor until the encoder count = desired distance
      * while currentpos < targetpos
      * run the motor
      */
+
+
+    /*
     if (arcadeStick.getRawButton(1)) {
      Spin(10, .2);
     } else {
@@ -209,13 +213,14 @@ public class Robot extends TimedRobot {
       WheelSpinner.setSelectedSensorPosition(0);
     }
     if (arcadeStick.getRawButton(3)) {
-    
+    WheelSpinner.set(ControlMode.Position, arcadeStick.getY());
     }
-
+*/
     Color detectedColor = m_colorSensor.getColor();
     /**
      * Run the color match algorithm on our detected color
      */
+    
     String colorString;
     ColorMatchResult match = m_colorMatcher.matchClosestColor(detectedColor);
 
