@@ -58,7 +58,7 @@ public class Robot extends TimedRobot {
    */
   private final Color kBlueTarget = ColorMatch.makeColor(0.143, 0.427, 0.429);
   private final Color kGreenTarget = ColorMatch.makeColor(0.197, 0.561, 0.240);
-  private final Color kRedTarget = ColorMatch.makeColor(0.561, 0.232, 0.114);
+  private final Color kRedTarget = ColorMatch.makeColor(0.561, 0.232, 0.114);//switch this to be more accurate
   private final Color kYellowTarget = ColorMatch.makeColor(0.361, 0.524, 0.113);
 
   Joystick arcadeStick = new Joystick(0);
@@ -106,7 +106,7 @@ public class Robot extends TimedRobot {
     currentPos = WheelSpinner.getSelectedSensorPosition();
     targetPos = position;
     while (currentPos < targetPos) {
-      WheelSpinner.set(ControlMode.Current, speed);
+      WheelSpinner.set(ControlMode.PercentOutput, speed);
       currentPos = WheelSpinner.getSelectedSensorPosition();
     }
     WheelSpinner.set(ControlMode.Current, 0);
@@ -118,14 +118,14 @@ public class Robot extends TimedRobot {
     currentPos = WheelSpinner.getSelectedSensorPosition();
     targetPos = startPos + position;
     while (currentPos < targetPos) {
-      WheelSpinner.set(ControlMode.Current, speed);
+      WheelSpinner.set(ControlMode.PercentOutput, speed);
       currentPos = WheelSpinner.getSelectedSensorPosition() - startPos;
     }
-    WheelSpinner.set(ControlMode.Current, 0);
+    WheelSpinner.set(ControlMode.PercentOutput, 0);
   }
 
   public void stop() {
-    WheelSpinner.set(ControlMode.Current, 0);
+    WheelSpinner.set(ControlMode.PercentOutput, 0);
   }
 
   public void Position() {
