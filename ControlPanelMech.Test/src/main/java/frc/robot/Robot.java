@@ -63,10 +63,10 @@ public class Robot extends TimedRobot {
 
   Joystick arcadeStick = new Joystick(0);
   TalonSRX WheelSpinner = new TalonSRX(5);
-  double magScale = 1;//scaling factor to convert the raw encoder value to distance traveled
-  double currentPos = 0;
-  double startPos = 0;
-  double targetPos = 0;
+  double magScale = .00025553;//(1/4096 * 3.14 * 4)/12;//scaling factor to convert the raw encoder value to distance traveled
+  double desiredDistance;
+  double distanceTraveled = 0;
+  double motorSpeed = .8; //.85 max
 
   String gameData = " ";
   Timer gameDataTimer = new Timer();
@@ -83,11 +83,8 @@ public class Robot extends TimedRobot {
     m_colorMatcher.addColorMatch(kRedTarget);
     m_colorMatcher.addColorMatch(kYellowTarget);    
     WheelSpinner.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 10);
-
     gameDataTimer.reset();
     	gameDataTimer.start();
-      
-
     }
 
   /**
@@ -112,19 +109,15 @@ public class Robot extends TimedRobot {
     WheelSpinner.set(ControlMode.Current, 0);
   }
  */
-  public void Spin (double position, double speed) {
-    WheelSpinner.setSelectedSensorPosition(0);//possible way to reset the encoder
-    startPos = WheelSpinner.getSelectedSensorPosition();
-    currentPos = WheelSpinner.getSelectedSensorPosition();
-    targetPos = startPos + position;
-    while (currentPos < targetPos) {
-      WheelSpinner.set(ControlMode.PercentOutput, speed);
-      currentPos = WheelSpinner.getSelectedSensorPosition() - startPos;
+  public void Spin (double distance) {
+    WheelSpinner.setSelectedSensorPosition(0);
+    distanceTraveled = 0;
+    desiredDistance = distance;
+    while (desiredDistance > distanceTraveled) {
+      distanceTraveled = WheelSpinner.getSelectedSensorPosition() * magScale;
+      WheelSpinner.set(ControlMode.PercentOutput, motorSpeed);
+      SmartDashboard.putNumber("Distance Traveled", distanceTraveled); 
     }
-    WheelSpinner.set(ControlMode.PercentOutput, 0);
-  }
-
-  public void stop() {
     WheelSpinner.set(ControlMode.PercentOutput, 0);
   }
 
@@ -148,6 +141,7 @@ public class Robot extends TimedRobot {
       colorString = "Unknown";
     }
 
+    /*
         if(gameData == null) {
           stop();
       } else if(gameData.charAt(0) == 'G' && colorString == "Red") {
@@ -177,11 +171,15 @@ public class Robot extends TimedRobot {
       } else {
         stop();
       }
+      */
   }
 
 
   @Override
   public void robotPeriodic() {
+    SmartDashboard.putNumber("Encoder Value", WheelSpinner.getSelectedSensorPosition());
+    SmartDashboard.putNumber("Distance Traveled", distanceTraveled); 
+
     /*
       while(true) {
     		if (Double.compare(gameDataTimer.get(), gameDataTimeOut) <= 0 && gameData == null) {
@@ -194,7 +192,27 @@ public class Robot extends TimedRobot {
     		gameData = ("NULL".equalsIgnoreCase(gameData)) ? null : gameData;
       }
       */  
+
+      /*
     WheelSpinner.set(ControlMode.PercentOutput, arcadeStick.getY());
+
+    if (arcadeStick.getRawButton(1)) {
+      distanceTraveled = 0;
+      desiredDistance = 5;
+      WheelSpinner.set(ControlMode.PercentOutput, .2);
+      while (desiredDistance > distanceTraveled) {
+      distanceTraveled = WheelSpinner.getSelectedSensorPosition() * magScale;
+      SmartDashboard.putNumber("Distance Traveled", distanceTraveled); //Encoder value scaled per foot for low gear
+
+    }
+    WheelSpinner.set(ControlMode.PercentOutput, 0);
+  }
+    if (arcadeStick.getRawButton(2)) {
+      WheelSpinner.setSelectedSensorPosition(0);
+    }
+    SmartDashboard.putNumber("Encoder Value", WheelSpinner.getSelectedSensorPosition());
+    SmartDashboard.putNumber("Distance Traveled", currentPos);//scaled to distance traveled
+    
     /**
      * reset encoder or get the current encoder value
      * run the motor until the encoder count = desired distance
@@ -216,11 +234,12 @@ public class Robot extends TimedRobot {
     WheelSpinner.set(ControlMode.Position, arcadeStick.getY());
     }
 */
+/*
     Color detectedColor = m_colorSensor.getColor();
     /**
      * Run the color match algorithm on our detected color
      */
-    
+    /*
     String colorString;
     ColorMatchResult match = m_colorMatcher.matchClosestColor(detectedColor);
 
@@ -239,14 +258,15 @@ public class Robot extends TimedRobot {
      * Open Smart Dashboard or Shuffleboard to see the color detected by the 
      * sensor.
      */
+    /*
     SmartDashboard.putNumber("Red", detectedColor.red);
     SmartDashboard.putNumber("Green", detectedColor.green);
     SmartDashboard.putNumber("Blue", detectedColor.blue);
     SmartDashboard.putNumber("Confidence", match.confidence);
     SmartDashboard.putString("Detected Color", colorString);
-    SmartDashboard.putNumber("Encoder Value", WheelSpinner.getSelectedSensorPosition());
-    SmartDashboard.putNumber("Encoder Value", WheelSpinner.getSelectedSensorPosition() * magScale);//scaled to distance traveled
     SmartDashboard.putString("FMS Color", gameData);
+    */
+    
 
   }
   
@@ -290,6 +310,18 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void teleopPeriodic() {
+    if (arcadeStick.getRawButton(1)) {
+      Spin(26); //24ft is 3 rotations around the color wheel
+  } else {
+    WheelSpinner.set(ControlMode.PercentOutput, 0);
+  }
+  /*
+    if (arcadeStick.getRawButton(2)) {
+      WheelSpinner.setSelectedSensorPosition(0);
+    }
+    SmartDashboard.putNumber("Encoder Value", WheelSpinner.getSelectedSensorPosition());
+    SmartDashboard.putNumber("Distance Traveled", currentPos);//scaled to distance traveled
+    */
   }
 
   /**
