@@ -151,7 +151,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void teleopPeriodic() {
-    WheelSpinner.set(ControlMode.PercentOutput, 0);
+    WheelSpinner.set(ControlMode.PercentOutput, 0);//default motor state when limit switch is triggered. Otherwise, inside loop
 
   while (limitSwitch.get() == false ) {
     if (arcadeStick.getRawButton(1)) {
