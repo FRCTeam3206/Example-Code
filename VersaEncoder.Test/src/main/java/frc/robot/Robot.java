@@ -12,7 +12,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import com.ctre.phoenix.motorcontrol.*;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.Joystick;
 
 /**
@@ -28,12 +27,17 @@ public class Robot extends TimedRobot {
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
+  TalonSRX WheelSpinner = new TalonSRX(5);
   Joystick arcadeStick = new Joystick(0);
-  double magScale = 1;//scaling factor to convert the raw encoder value to distance traveled
+
   double currentPos = 0;
   double startPos = 0;
   double targetPos = 0;
-  TalonSRX WheelSpinner = new TalonSRX(5);
+  double rpmSetpoint = 1000;
+  double magScale = .00025553;//(1/4096 * 3.14 * 4)/12;//scaling factor to convert the raw encoder value to distance traveled
+  double desiredDistance;
+  double distanceTraveled = 0;
+  double motorSpeed = .8; //.85 max
   /**
    * This function is run when the robot is first started up and should be
    * used for any initialization code.
@@ -44,6 +48,18 @@ public class Robot extends TimedRobot {
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
     WheelSpinner.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 10);
+  }
+
+  public void Spin (double distance) {
+    WheelSpinner.setSelectedSensorPosition(0);
+    distanceTraveled = 0;
+    desiredDistance = distance;
+    while (desiredDistance > distanceTraveled) {
+      distanceTraveled = WheelSpinner.getSelectedSensorPosition() * magScale;
+      WheelSpinner.set(ControlMode.PercentOutput, motorSpeed);
+      SmartDashboard.putNumber("Distance Traveled", distanceTraveled); 
+    }
+    WheelSpinner.set(ControlMode.PercentOutput, 0);
   }
 
   /**
@@ -57,10 +73,10 @@ public class Robot extends TimedRobot {
   @Override
   public void robotPeriodic() {
     WheelSpinner.set(ControlMode.PercentOutput, arcadeStick.getY());
-    SmartDashboard.putNumber("Encoder Value", WheelSpinner.getSelectedSensorPosition());
-    SmartDashboard.putNumber("Encoder Value", WheelSpinner.getSelectedSensorPosition() * magScale);//scaled to distance traveled
+    SmartDashboard.putNumber("Encoder Value", WheelSpinner.getSelectedSensorPosition() * magScale);
+    SmartDashboard.putNumber("Distance Traveled", distanceTraveled); 
+    SmartDashboard.putNumber("RPM/Velocity", WheelSpinner.getSelectedSensorVelocity());
   }
-
   /**
    * This autonomous (along with the chooser code above) shows how to select
    * between different autonomous modes using the dashboard. The sendable
@@ -100,6 +116,17 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void teleopPeriodic() {
+    //spin the wheel 3 times(color wheel thing)
+    if (arcadeStick.getRawButton(1)) {
+      Spin(26); //24ft is 3 rotations around the color wheel
+  } else {
+    WheelSpinner.set(ControlMode.PercentOutput, 0);
+  }
+
+  //Set RPM/Velocity of the wheels to be static. build in failsafe later
+  if (arcadeStick.getRawButton(2)) {
+    WheelSpinner.set(ControlMode.Velocity, rpmSetpoint);
+  }
   }
 
   /**
