@@ -9,7 +9,6 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.I2C;
@@ -29,10 +28,6 @@ import edu.wpi.first.wpilibj.Joystick;
  * project.
  */
 public class Robot extends TimedRobot {
-  private static final String kDefaultAuto = "Default";
-  private static final String kCustomAuto = "My Auto";
-  private String m_autoSelected;
-  private final SendableChooser<String> m_chooser = new SendableChooser<>();
   /**
    * This function is run when the robot is first started up and should be
    * used for any initialization code.
@@ -78,17 +73,13 @@ public class Robot extends TimedRobot {
 
   @Override
   public void robotInit() {
-    m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
-    m_chooser.addOption("My Auto", kCustomAuto);
-    SmartDashboard.putData("Auto choices", m_chooser);
-
     m_colorMatcher.addColorMatch(kBlueTarget);
     m_colorMatcher.addColorMatch(kGreenTarget);
     m_colorMatcher.addColorMatch(kRedTarget);
     m_colorMatcher.addColorMatch(kYellowTarget);    
-    WheelSpinner.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 10);
+    WheelSpinner.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 30);
     gameDataTimer.reset();
-    	gameDataTimer.start();
+      gameDataTimer.start();      
     }
 
   public void Spin (double distance) {
@@ -134,9 +125,6 @@ public class Robot extends TimedRobot {
   
   @Override
   public void autonomousInit() {
-    m_autoSelected = m_chooser.getSelected();
-    // m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
-    System.out.println("Auto selected: " + m_autoSelected);
   }
 
   /**
@@ -151,23 +139,18 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void teleopPeriodic() {
-    WheelSpinner.set(ControlMode.PercentOutput, 0);//default motor state when limit switch is triggered. Otherwise, inside loop
-
-  while (limitSwitch.get() == false ) {
-    if (arcadeStick.getRawButton(1)) {
-      Spin(26); //24ft is 3 rotations around the color wheel
+  if (limitSwitch.get() == false) {
+      Spin(3); //24ft is 3 rotations around the color wheel
   } else {
     WheelSpinner.set(ControlMode.PercentOutput, 0);
   }
   //reset the encoder
     if (arcadeStick.getRawButton(2)) {
-      WheelSpinner.setSelectedSensorPosition(0);
-  } else {
-      WheelSpinner.getSelectedSensorPosition();
+      Spin(3);  
+    } else {
+      WheelSpinner.set(ControlMode.PercentOutput, 0);
   }
-  WheelSpinner.set(ControlMode.PercentOutput, arcadeStick.getY());
   }
-}
 
   /**
    * This function is called periodically during test mode.
