@@ -7,6 +7,7 @@
 
 package frc.robot;
 
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -64,10 +65,11 @@ public class Robot extends TimedRobot {
 
   double magScale = .00025553;//((1/4096 * 3.14 * 4)/12) scaling factor to convert the raw encoder value to distance traveled
   double desiredDistance;
+  String originalV3Color;
   double distanceTraveled = 0;
   double motorSpeed = .8; //.85 max
 
-  String gameData = " ";
+  String gameData = "";
   Timer gameDataTimer = new Timer();
   double gameDataTimeOut = 3;
 
@@ -94,30 +96,36 @@ public class Robot extends TimedRobot {
     WheelSpinner.set(ControlMode.PercentOutput, 0);
   }
 
+  public void CenterPanelPosition (String V3Color) {
+    WheelSpinner.setSelectedSensorPosition(0);
+    distanceTraveled = 0;
+    originalV3Color = V3Color;
+    while (originalV3Color == V3Color) {
+      distanceTraveled = WheelSpinner.getSelectedSensorPosition() * magScale;
+      Color detectedColor = m_colorSensor.getColor();
+      ColorMatchResult match = m_colorMatcher.matchClosestColor(detectedColor);
+      if (match.color == kBlueTarget) {V3Color = "Blue";
+      } else if (match.color == kRedTarget) {V3Color = "Red";
+      } else if (match.color == kGreenTarget) {V3Color = "Green";
+      } else if (match.color == kYellowTarget) {V3Color = "Yellow";
+      } else {V3Color = "Unknown";
+      }
+      WheelSpinner.set(ControlMode.PercentOutput, 0.2); //spin wheel until color changes
+      SmartDashboard.putNumber("Distance Traveled", distanceTraveled);
+    }
+    desiredDistance = 1.042/2;// center of a color segment
+    distanceTraveled = 0;
+    while (desiredDistance > distanceTraveled) {
+      distanceTraveled = WheelSpinner.getSelectedSensorPosition() * magScale;
+      WheelSpinner.set(ControlMode.PercentOutput, -0.2);
+      SmartDashboard.putNumber("Distance Traveled", distanceTraveled); 
+    }
+    WheelSpinner.set(ControlMode.PercentOutput, 0);
+  }
+
   @Override
   public void robotPeriodic() {
-    Color detectedColor = m_colorSensor.getColor();
-    String colorString;
-    ColorMatchResult match = m_colorMatcher.matchClosestColor(detectedColor);
-
-    if (match.color == kBlueTarget) {
-      colorString = "Blue";
-    } else if (match.color == kRedTarget) {
-      colorString = "Red";
-    } else if (match.color == kGreenTarget) {
-      colorString = "Green";
-    } else if (match.color == kYellowTarget) {
-      colorString = "Yellow";
-    } else {
-      colorString = "Unknown";
-    }
-
-    SmartDashboard.putNumber("Red", detectedColor.red);//tune the RGB values from the colorMatch
-    SmartDashboard.putNumber("Green", detectedColor.green);
-    SmartDashboard.putNumber("Blue", detectedColor.blue);
-    SmartDashboard.putNumber("Confidence", match.confidence);
-    SmartDashboard.putString("Detected Color", colorString);
-    SmartDashboard.putString("FMS Color", gameData);
+    
     //encoder outputs
     SmartDashboard.putNumber("Encoder Value", WheelSpinner.getSelectedSensorPosition());//raw
     SmartDashboard.putNumber("Distance Traveled", distanceTraveled);//scaled
@@ -159,5 +167,61 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void testPeriodic() {
+    //looking for color position code from game data FMS
+    Color detectedColor = m_colorSensor.getColor();
+    String colorString;
+    ColorMatchResult match = m_colorMatcher.matchClosestColor(detectedColor);
+
+    if (match.color == kBlueTarget) {colorString = "Blue";
+    } else if (match.color == kRedTarget) {colorString = "Red";
+    } else if (match.color == kGreenTarget) {colorString = "Green";
+    } else if (match.color == kYellowTarget) {colorString = "Yellow";
+    } else {colorString = "Unknown";
+    }
+
+    SmartDashboard.putNumber("Red", detectedColor.red);//tune the RGB values from the colorMatch
+    SmartDashboard.putNumber("Green", detectedColor.green);
+    SmartDashboard.putNumber("Blue", detectedColor.blue);
+    SmartDashboard.putNumber("Confidence", match.confidence);
+    SmartDashboard.putString("Detected Color", colorString);
+    SmartDashboard.putString("FMS Color", gameData);
+    
+    gameData = DriverStation.getInstance().getGameSpecificMessage();
+    if(arcadeStick.getRawButton(3) && gameData.length() > 0){
+      CenterPanelPosition(colorString);//center the sensor on the panel segment of the current color
+      switch (gameData.charAt(0)){
+        case 'B' :
+          //Blue case code
+          if(colorString == "Green"){Spin(1.042);
+          } else if(colorString == "Blue"){Spin(2.083);
+          } else if(colorString == "Yellow"){Spin(3.125);
+          } else {Spin(0);}
+          break;
+        case 'G' :
+          //Green case code
+          if(colorString == "Red"){Spin(1.042);
+          } else if(colorString == "Green"){Spin(2.083);
+          } else if(colorString == "Blue"){Spin(3.125);
+          } else {Spin(0);}
+          break;
+        case 'R' :
+          //Red case code
+          if(colorString == "Yellow"){Spin(1.042);
+          } else if(colorString == "Red"){Spin(2.083);
+          } else if(colorString == "Green"){Spin(3.125);
+          } else {Spin(0);}
+          break;
+        case 'Y' :
+          //Yellow case code
+          if(colorString == "Blue"){Spin(1.042);
+          } else if(colorString == "Yellow"){Spin(2.083);
+          } else if(colorString == "Red"){Spin(3.125);
+          } else {Spin(0);}
+          break;
+        default :
+          //This is corrupt data
+          break;
+      }
+    }
   }
 }
