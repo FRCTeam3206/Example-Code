@@ -79,7 +79,7 @@ public class Robot extends TimedRobot {
     m_colorMatcher.addColorMatch(kYellowTarget);    
     WheelSpinner.configSelectedFeedbackSensor(FeedbackDevice.CTRE_MagEncoder_Relative, 0, 30);
     gameDataTimer.reset();
-      gameDataTimer.start();      
+    gameDataTimer.start();      
     }
 
   public void Spin (double distance) {
@@ -88,7 +88,7 @@ public class Robot extends TimedRobot {
     desiredDistance = distance;
     while (desiredDistance > distanceTraveled) {
       distanceTraveled = WheelSpinner.getSelectedSensorPosition() * magScale;
-      WheelSpinner.set(ControlMode.PercentOutput, motorSpeed);
+      WheelSpinner.set(ControlMode.PercentOutput, -motorSpeed);
       SmartDashboard.putNumber("Distance Traveled", distanceTraveled); 
     }
     WheelSpinner.set(ControlMode.PercentOutput, 0);
@@ -146,10 +146,12 @@ public class Robot extends TimedRobot {
   }
   //reset the encoder
     if (arcadeStick.getRawButton(2)) {
-      Spin(3);  
+      Spin(26);  
+    } else if (arcadeStick.getRawButton(4)) {
+      Spin(.5);
     } else {
       WheelSpinner.set(ControlMode.PercentOutput, 0);
-  }
+    }
   }
 
   /**
